@@ -1,0 +1,31 @@
+name: Build TeleDrive Pro Baru
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.11' }
+      - run: gradle --version
+      - run: yes | sdkmanager --licenses || true
+      - run: gradle :app:assembleDebug --no-daemon --console=plain -x testDebugUnitTest
+      - run: find . -name "*.apk" -type f
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: TeleDrive-Pro-Baru-APK, path: app/build/outputs/apk/debug/*.apk, if-no-files-found: warn, retention-days: 30 }
+      - uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: TeleDrive Pro Baru Build ${{ github.run_number }}
+          body: APK TeleDrive Pro Baru - Multi Akun + Download Folder Preserve + Gallery Bulan Tahun
+          files: app/build/outputs/apk/debug/*.apk
